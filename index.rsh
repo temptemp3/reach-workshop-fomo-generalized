@@ -1,15 +1,19 @@
 'reach 0.1';
 'use strict';
 
-
+// WORKSHOP
 // 1. Problem Analysis
 // What funds change ownership during the application?
-// Buyers continually add funds to the balance during execution until the last N Buyers, and potentially the Funder, split the blance.
+// Buyers continually purchase tickets adding funds to the balance during execution 
+// until the last N Buyers, and potentially the Funder, split the blance. 
+// A Buyer may purchase a single ticket.
+// The price of tickets may increase as more tickets are sold. 
+// If less than N buyers purchase a ticket, then a portion of the balance is given to the Funder.
 // 2. Data Definition
-// Same as Workshop: Fomo
+// Same as Workshop: Fomo (https://docs.reach.sh/workshop-fomo.html)
 // last N Buyers stored in Array(Address, N)
 // 3. Communication Construction
-// 3.1. The Funder publishes the ticket price and deadline while initializing the winnner array with self
+// 3.1. The Funder publishes the ticket price, deadline, and unit price
 // 3.2. While the deadline has yet to be reached:
 // 3.2a. Allow a Buyer to purchase a ticket
 // 3.2b. Keep track of winners (last N Buyers)
@@ -21,10 +25,10 @@
 
 // FOMO Workshop generalized to last N winners
 
-const NUM_OF_WINNERS = 1;
+const NUM_OF_WINNERS = 2; // TODO may require from funder
 
 const CommonInterface = {
-  // Show the address of winner
+  // show the address of winner
   showOutcome: Fun([Array(Address, NUM_OF_WINNERS)], Null),
 };
 
@@ -32,14 +36,15 @@ const FunderInterface = {
   ...CommonInterface,
   getParams: Fun([], Object({
     deadline: UInt, // relative deadline
-    ticketPrice: UInt
+    ticketPrice: UInt, // initial price of ticket
+    unitPrice: UInt // affect how the ticket price changes as tickets or sold (Note, unitPrice of 0 keeps ticket price constant)
   }))
 };
 
 const BuyerInterface = {
   ...CommonInterface,
   shouldBuyTicket: Fun([UInt], Bool),
-  showPurchase: Fun([Address], Null)
+  showPurchase: Fun([Address, UInt], Null)
 };
 
 export const main = Reach.App(
@@ -53,11 +58,11 @@ export const main = Reach.App(
     const showOutcome = (winners) =>
       each([Funder, Buyer], () => interact.showOutcome(winners));
 
-    // 3.1. The Funder publishes the ticket price and deadline
+    // 3.1. The Funder publishes the ticket price, deadline, and unit price
     Funder.only(() => {
-      const { ticketPrice, deadline } = declassify(interact.getParams());
+      const { ticketPrice, deadline, unitPrice } = declassify(interact.getParams());
     })
-    Funder.publish(ticketPrice, deadline);
+    Funder.publish(ticketPrice, deadline, unitPrice);
 
     // Initialize winner array to Funder
     const initialWinners = Array.replicate(NUM_OF_WINNERS, Funder);
@@ -65,7 +70,7 @@ export const main = Reach.App(
     // 3.2. While the deadline has yet to be reached:
     const [keepGoing, winners, ticketSold] =
       parallelReduce([true, initialWinners, 0])
-        .invariant(balance() == ticketPrice * ticketSold)
+        .invariant(balance() == ticketPrice * ticketSold + unitPrice * ticketSold * (ticketSold - 1) / 2)
         .while(keepGoing)
         .case(
           Buyer,
@@ -73,11 +78,11 @@ export const main = Reach.App(
           (() => ({
             when: declassify(interact.shouldBuyTicket(ticketPrice))
           })),
-          ((_) => ticketPrice),
+          ((_) => ticketPrice + unitPrice * ticketSold),
           ((_) => {
             const buyer = this;
             // 3.2b. Keep track of winners (last N Buyers)
-            Buyer.only(() => interact.showPurchase(buyer));
+            Buyer.only(() => interact.showPurchase(buyer, ticketPrice + unitPrice * ticketSold));
             const idx = ticketSold % NUM_OF_WINNERS;
             const newWinners =
               Array.set(winners, idx, buyer);

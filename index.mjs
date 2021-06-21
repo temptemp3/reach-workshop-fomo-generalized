@@ -1,7 +1,7 @@
 import { loadStdlib, getConnector } from '@reach-sh/stdlib';
 import * as backend from './build/index.main.mjs';
 
-const numberOfBuyers = 5;
+const numberOfBuyers = 8;
 
 (async () => {
 
@@ -20,11 +20,13 @@ const numberOfBuyers = 5;
   const ctcFunder = accFunder.deploy(backend);
   const ctcInfo = ctcFunder.getInfo();
 
-  const ticketPrice = stdlib.parseCurrency(3); //Array.from({length: numberOfBuyers}, () => stdlib.parseCurrency(3));
+  const ticketPrice = stdlib.parseCurrency(3); // start ticket price at 3
+  const unitPrice = stdlib.parseCurrency(0); // keep ticket price contant
   const deadline = connector === 'ALGO' ? 4 : 8;
   const funderParams = {
     deadline,
-    ticketPrice
+    ticketPrice,
+    unitPrice,
   }
 
   const resultText = (outcome, addr) =>
@@ -48,10 +50,10 @@ const numberOfBuyers = 5;
         // considering buying if not yet bought yet and 
         // buyer wants to buy 
         shouldBuyTicket: () =>
-          !bidHistory[Who] && Math.random() < .5,
-        showPurchase: (addr) => {
+          !bidHistory[Who] && Math.random() < .6,
+        showPurchase: (addr, price) => {
           if (stdlib.addressEq(addr, accBuyer)) {
-            console.log(`${Who} bought a ticket.`);
+            console.log(`${Who} bought a ticket at price ${price}.`);
             bidHistory[Who] = true;
           }
         }
