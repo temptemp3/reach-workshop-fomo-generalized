@@ -25,7 +25,12 @@
 
 // FOMO Workshop generalized to last N winners
 
-const NUM_OF_WINNERS = 2; // TODO may require from funder
+// TODO (1) may requ number of winners from funder 
+// TODO Introducing a small payout system (dividends) to Buyers
+//      as the game progresses. e.g. every time the ring buffer
+//      is filled.
+
+const NUM_OF_WINNERS = 2; // TODO (1)
 
 const CommonInterface = {
   // show the address of winner
