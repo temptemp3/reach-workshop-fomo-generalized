@@ -21,7 +21,7 @@ const numberOfBuyers = 8;
   const ctcInfo = ctcFunder.getInfo();
 
   const ticketPrice = stdlib.parseCurrency(3); // start ticket price at 3
-  const unitPrice = stdlib.parseCurrency(0); // keep ticket price contant
+  const unitPrice = stdlib.parseCurrency(1); // keep ticket price constant
   const deadline = connector === 'ALGO' ? 4 : 8;
   const funderParams = {
     deadline,
@@ -38,7 +38,10 @@ const numberOfBuyers = 8;
     backend.Funder(ctcFunder, {
       showOutcome: (outcome) =>
         console.log(`Funder saw they ${resultText(outcome, accFunder.getAddress())}`),
-      getParams: () => funderParams
+      getParams: () => funderParams,
+      showBalance: async () => {
+        console.log(`Funder balance now ${await getBalance(accFunder)}`)
+      }
     })
   ].concat(
     accBuyers.map((accBuyer, i) => {
@@ -50,12 +53,15 @@ const numberOfBuyers = 8;
         // considering buying if not yet bought yet and 
         // buyer wants to buy 
         shouldBuyTicket: () =>
-          !bidHistory[Who] && Math.random() < .6,
-        showPurchase: (addr, price) => {
-          if (stdlib.addressEq(addr, accBuyer)) {
-            console.log(`${Who} bought a ticket at price ${price}.`);
+          !bidHistory[Who] && Math.random() * 2 > .5,
+        showPurchase: (addr, price, j) => {
+          if (stdlib.addressEq(addr, accBuyer, i)) {
+            console.log(`${j}: ${Who} bought a ticket at price ${price}.`);
             bidHistory[Who] = true;
           }
+        },
+        showBalance: async () => {
+          console.log(`${Who} balance now ${await getBalance(accBuyer)}`)
         }
       });
     })
