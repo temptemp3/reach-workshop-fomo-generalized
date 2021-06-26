@@ -33,6 +33,8 @@
 //   + show Participant balance after dividend payout
 
 // TODO (1) may require number of winners from Funder 
+// TODO (2) add web interface (react)
+// TODO (3) modify the command line frontend to play until a participcant reaches a goal
 
 const NUM_OF_WINNERS = 2; // TODO (1) may require number of winners from funder 
 
